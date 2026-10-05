@@ -1,0 +1,7 @@
+node_modules/
+.env
+keys/*
+!keys/.gitkeep
+*.sqlite
+coverage/
+AUTH_SERVICE_PLAN.md
