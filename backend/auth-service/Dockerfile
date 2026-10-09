@@ -1,14 +1,11 @@
-# Debian-based (not alpine) so the sqlite3 prebuilt binary works without build tools.
+# Image for the auth service.
 FROM node:22-slim
 WORKDIR /app
-
-COPY package*.json ./
-# Full install (not --omit=dev): sequelize-cli is needed to run migrations at startup.
-RUN npm ci
-
+COPY package.json ./
+# package-lock.json isn't in the repo, so use npm install (npm ci needs the lock file).
+RUN npm install --omit=dev
 COPY . .
 EXPOSE 4000
-
-# DECISION: runs as root so the bind-mounted keys/ are readable whatever their host owner is.
-# Bake keys in via JWT_PRIVATE_KEY/JWT_PUBLIC_KEY env vars and add "USER node" for real deployments.
-CMD ["sh", "-c", "npx sequelize-cli db:migrate && node src/server.js"]
+# `npm start` first creates/updates the tables and adds the team's admins, then runs the server.
+# It runs as root so it can write the token keys into the shared keys/ folder the first time.
+CMD ["npm", "start"]

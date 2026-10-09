@@ -1,8 +1,9 @@
+// Settings for the database scripts (sequelize-cli): where the migration and seed files are, and
+// which database to run them on. The database comes from src/config.js, the same one the app uses.
 const path = require('path');
 
 module.exports = {
-  config: path.resolve('src/config/database.js'),
-  'models-path': path.resolve('src/db/models'),
-  'migrations-path': path.resolve('src/db/migrations'),
-  'seeders-path': path.resolve('src/db/seeders'),
+  url: require('./src/config').databaseUrl,
+  'migrations-path': path.resolve('db/migrations'),
+  'seeders-path': path.resolve('db/seeders'),
 };
