@@ -1,63 +1,38 @@
 {
   "name": "auth-service",
   "version": "1.0.0",
-  "description": "Auth service (JWT + RBAC) for the visa appointment booking platform",
+  "description": "Auth service (JWT + user/admin roles) for Book My Visa",
   "private": true,
   "main": "src/server.js",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "test": "jest --runInBand",
-    "keys:generate": "node scripts/generate-keys.js",
+    "dev": "npm run db:setup && node --watch src/server.js",
+    "start": "npm run db:setup && node src/server.js",
+    "db:setup": "sequelize-cli db:migrate && sequelize-cli db:seed:all",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "sequelize-cli db:seed:all",
-    "test:e2e": "jest --runInBand tests/e2e --testPathIgnorePatterns=/node_modules/",
     "lint": "eslint ."
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "setupFiles": [
-      "<rootDir>/tests/env.js"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/tests/e2e/"
-    ]
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.24.5",
     "pg": "^8.23.1",
     "pg-hstore": "^2.3.4",
-    "pino": "^10.4.0",
-    "pino-http": "^11.0.0",
     "sequelize": "^6.37.8",
-    "sqlite3": "^6.0.1",
+    "sequelize-cli": "^6.6.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
-    "jest": "^30.5.2",
-    "nodemon": "^3.1.14",
-    "prettier": "^3.9.9",
-    "sequelize-cli": "^6.6.5",
-    "supertest": "^7.3.1",
-    "umzug": "^3.8.3"
+    "prettier": "^3.9.9"
   }
 }

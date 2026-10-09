@@ -1,4 +1,5 @@
-# Postgres + auth service. Run `npm run keys:generate` and create .env (see README) first.
+# Starts Postgres and the auth service together: `docker compose up --build`.
+# On start, the service creates the tables, adds the team's admins and (first time only) its token keys.
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,7 +8,7 @@ services:
       POSTGRES_PASSWORD: auth
       POSTGRES_DB: auth_db
     ports:
-      - '5432:5432' # change the left side if you already run Postgres locally
+      - '5432:5432' # already running Postgres on 5432? change the left number
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,21 +18,19 @@ services:
 
   auth-service:
     build: .
-    env_file: .env
+    env_file: # your .env, if you have one
+      - path: .env
+        required: false
     environment:
-      DATABASE_URL: postgres://auth:auth@postgres:5432/auth_db # container-to-container address
-      DB_DIALECT: postgres
+      # inside Docker the database's address is "postgres", not localhost
+      DATABASE_URL: postgres://auth:auth@postgres:5432/auth_db
     ports:
       - '4000:4000'
     volumes:
-      - ./keys:/app/keys:ro
+      - ./keys:/app/keys # token keys live here; other services read public.pem from this folder
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ['CMD', 'node', '-e', "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
-      interval: 10s
-      retries: 5
 
 volumes:
   pgdata:
