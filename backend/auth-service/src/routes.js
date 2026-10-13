@@ -114,9 +114,10 @@ router.post('/logout', authenticate, async (req, res) => {
 router.get('/me', authenticate, (req, res) => res.json({ user: req.user }));
 
 // Saves the mobile number and nationality from the Account tab. Both are required.
-router.put('/me', authenticate, async (req, res) => {
+const updateProfile = async (req, res) => {
   res.json({ user: await req.user.update(profileBody.parse(req.body)) });
-});
+};
+router.put('/me', authenticate, updateProfile);
 
 // Everything under /admin needs a logged-in admin.
 const admin = express.Router();
