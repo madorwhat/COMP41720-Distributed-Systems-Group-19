@@ -13,7 +13,9 @@ cp .env.example .env
 npm run dev            # runs the schema scripts + admin seed, then http://localhost:4000
 ```
 
-It needs a Postgres database at `DATABASE_URL` (default `postgres://auth:auth@localhost:5432/auth_db`). No local Postgres? `docker compose up -d postgres` starts one with exactly those settings, or `docker compose up --build` runs the whole service. The JWT key pair is created in `keys/` on first start.
+If local Postgres already uses port `5432`, Docker uses host port `5433`; set `DATABASE_URL` in `.env` to `postgres://auth:auth@127.0.0.1:5433/auth_db`.
+
+It needs a Postgres database at `DATABASE_URL` (default `postgres://auth:auth@localhost:5432/auth_db`). No local Postgres? `docker compose up -d postgres` starts one, or `docker compose up --build` runs the whole service. The JWT key pair is created in `keys/` on first start.
 
 ## The auth database
 
