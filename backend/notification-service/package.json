@@ -1,0 +1,37 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "Confirmation and reminder emails for Book My Visa",
+  "private": true,
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run db:migrate && node --watch src/server.js",
+    "start": "npm run db:migrate && node src/server.js",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "publish-test-event": "node scripts/publish-test-event.js",
+    "test": "node --test",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "amqplib": "^2.2.0",
+    "express": "^5.3.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.1.7",
+    "pg": "^8.23.1",
+    "pg-hstore": "^2.3.4",
+    "prom-client": "^15.1.3",
+    "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  }
+}

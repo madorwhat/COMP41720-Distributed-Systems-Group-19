@@ -1,0 +1,56 @@
+# Starts the Notification Service with everything it needs: `docker compose up --build`.
+#   RabbitMQ UI:  http://localhost:15672  (guest / guest)
+#   Mailpit inbox: http://localhost:8025
+services:
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: notification
+      POSTGRES_PASSWORD: notification
+      POSTGRES_DB: notification_db
+    ports:
+      - '${NOTIFICATION_DB_HOST_PORT:-5435}:5432'
+    volumes:
+      - notification_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U notification -d notification_db']
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - '${RABBITMQ_HOST_PORT:-5672}:5672'
+      - '${RABBITMQ_UI_HOST_PORT:-15672}:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '${MAILPIT_SMTP_HOST_PORT:-1025}:1025'
+      - '${MAILPIT_UI_HOST_PORT:-8025}:8025'
+
+  notification-service:
+    build: .
+    environment:
+      DATABASE_URL: postgres://notification:notification@notification-postgres:5432/notification_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      PORT: 4003
+    ports:
+      - '${NOTIFICATION_HOST_PORT:-4003}:4003'
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  notification_pgdata:
+  rabbitmq_data:
