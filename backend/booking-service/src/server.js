@@ -7,6 +7,7 @@ const config = require('./config');
 const { sequelize } = require('./db');
 const { httpError } = require('./auth');
 const routes = require('./routes');
+const events = require('./events');
 
 const app = express();
 app.use(helmet());
@@ -43,11 +44,13 @@ app.use((err, req, res, _next) => {
 
 sequelize
   .authenticate()
-  .then(() =>
-    app.listen(config.port, () =>
+  .then(() => {
+    // Booking works even if RabbitMQ is down; it only means no emails until it is back.
+    events.connect().catch((err) => console.error(`Cannot connect to RabbitMQ: ${err.message}`));
+    return app.listen(config.port, () =>
       console.log(`Booking service on http://localhost:${config.port}`),
-    ),
-  )
+    );
+  })
   .catch((err) => {
     console.error(`Cannot connect to the database: ${err.message}`);
     process.exit(1);

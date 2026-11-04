@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { bookingConfirmed } = require('../src/events');
+const { bookingConfirmed } = require('../src/consumer/messages');
 
 const valid = {
   eventId: '6f1c1d2e-8a4b-4c3d-9e5f-1a2b3c4d5e6f',

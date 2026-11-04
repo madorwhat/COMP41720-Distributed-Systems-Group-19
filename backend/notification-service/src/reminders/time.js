@@ -1,6 +1,6 @@
 // Small date helpers that work in Irish time. They take "now" as an argument so the tests can
 // pretend it is any moment, for example the night the clocks go back.
-const config = require('./config');
+const config = require('../config');
 
 // The date and time on a clock in Dublin at that moment, e.g. { date: '2026-10-25', time: '00:30' }.
 function dublinClock(now) {

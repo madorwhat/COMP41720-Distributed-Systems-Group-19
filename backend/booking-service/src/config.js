@@ -16,6 +16,7 @@ module.exports = {
   port: Number(process.env.PORT) || 4001,
   databaseUrl:
     process.env.DATABASE_URL || 'postgres://booking:booking@localhost:5434/booking_db',
+  rabbitUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim()),
