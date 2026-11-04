@@ -11,8 +11,11 @@ module.exports = {
   register,
   messagesConsumed: counter(
     'notification_messages_consumed_total',
-    'Messages taken from RabbitMQ, by result',
-    ['result'], // sent, duplicate, retry, dead_letter
+    'Messages taken from RabbitMQ, by kind of message and result',
+    // stream: booking-confirmed or slots-opened.
+    // result: sent, duplicate, retry, dead_letter, and skipped (slots-opened only: nobody to tell,
+    // or everybody was told recently).
+    ['result', 'stream'],
   ),
   emailsSent: counter('notification_emails_sent_total', 'Emails sent', ['kind']),
   emailsFailed: counter('notification_emails_failed_total', 'Emails that failed to send', ['kind']),

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { dublinClock, nextDay, isReminderDue } = require('../src/time');
+const { dublinClock, nextDay, isReminderDue } = require('../src/reminders/time');
 
 const at = (iso) => new Date(iso);
 const appointment = (day, slotTime = '12:00 - 13:00') => ({ day, slotTime });
