@@ -22,6 +22,11 @@ services:
       JWT_PUBLIC_KEY_PATH: /app/auth-keys/public.pem
       PORT: 4001
       CORS_ORIGINS: http://localhost:3000
+      # RabbitMQ is started by the Notification Service's compose file, which has its own network,
+      # so from here it is reached through the host. Booking works without it (no emails then).
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@host.docker.internal:5672}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway' # Linux needs this line; Docker Desktop already knows the name
     ports:
       - '${BOOKING_HOST_PORT:-4001}:4001'
     volumes:

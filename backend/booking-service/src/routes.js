@@ -2,6 +2,7 @@ const express = require('express');
 const { z } = require('zod');
 const { sequelize, BookingSlot, Appointment } = require('./db');
 const { authenticate, requireAdmin, httpError } = require('./auth');
+const events = require('./events');
 
 const country = z.enum(['Schengen', 'UK', 'Irish']);
 const visaType = z.enum(['Student', 'Business', 'Tourist']);
@@ -43,6 +44,7 @@ router.get('/health', async (req, res) => {
 
 router.post('/api/v1/tpv/slots', authenticate, requireAdmin, async (req, res) => {
   const slot = await BookingSlot.create(createSlotBody.parse(req.body));
+  events.slotsOpened(slot); // tell Notification; we don't wait for it
   res.status(201).json({ slot });
 });
 
@@ -65,10 +67,11 @@ router.get('/api/v1/tpv/slots', async (req, res) => {
 
 router.post('/api/v1/bookings', authenticate, async (req, res) => {
   const { bookingId } = z.object({ bookingId: z.uuid() }).parse(req.body);
-  const appointment = await sequelize.transaction(async (transaction) => {
-    const [updatedCount] = await BookingSlot.update(
+  const { appointment, slot } = await sequelize.transaction(async (transaction) => {
+    // `returning: true` also gives back the booked slot, which the confirmation email needs.
+    const [updatedCount, [slot]] = await BookingSlot.update(
       { isBooked: true },
-      { where: { bookingId, isBooked: false }, transaction },
+      { where: { bookingId, isBooked: false }, returning: true, transaction },
     );
 
     if (updatedCount === 0) {
@@ -77,8 +80,14 @@ router.post('/api/v1/bookings', authenticate, async (req, res) => {
       throw httpError(409, 'SLOT_UNAVAILABLE', 'Slot has already been booked');
     }
 
-    return Appointment.create({ userId: req.user.id, bookingId }, { transaction });
+    const appointment = await Appointment.create(
+      { userId: req.user.id, bookingId },
+      { transaction },
+    );
+    return { appointment, slot };
   });
+  // Only now that the booking is committed do we tell Notification; we don't wait for it.
+  events.bookingConfirmed(appointment, slot, req.user);
   res.status(201).json({ appointment });
 });
 
