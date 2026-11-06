@@ -1,0 +1,107 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
+
+.home-page {
+  --ink: #18223b; --muted: #68748b; --blue: #435de5; --blue-dark: #3048c6;
+  --border: #e5e9f2; --tint: #eef1ff;
+  min-height: 100vh; color: var(--ink);
+  background: radial-gradient(ellipse at 84% 0%, rgba(220,226,255,.7), transparent 34rem), #f7f8fc;
+  font: 16px/1.65 "DM Sans", system-ui, sans-serif;
+}
+.home-page *, .home-page *::before, .home-page *::after { box-sizing: border-box; }
+.home-page button, .home-page input, .home-page select { font: inherit; }
+.home-page :where(h1,h2,h3,p) { margin: 0; }
+.home-page :where(h1,h2,h3) { font-family: "Manrope",sans-serif; letter-spacing: -.04em; line-height: 1.18; }
+.home-page :focus-visible { outline: 3px solid #8195ff; outline-offset: 4px; }
+.home-content { width: min(1160px,calc(100% - 64px)); margin: 0 auto; padding: 42px 0 76px; }
+
+.home-page .welcome {
+  position: relative; isolation: isolate; display: grid;
+  grid-template-columns: minmax(0,1.12fr) minmax(310px,.88fr);
+  align-items: center; gap: clamp(28px,4vw,58px); overflow: hidden;
+  padding: clamp(30px,5vw,62px); border: 1px solid rgba(255,255,255,.85);
+  border-radius: 30px; background: linear-gradient(135deg,#fff 15%,#f2f4ff 100%);
+  box-shadow: 0 24px 70px rgba(37,51,102,.075);
+}
+.home-page .welcome::after {
+  position: absolute; z-index: -1; right: -110px; bottom: -175px;
+  width: 350px; height: 350px; border: 1px solid rgba(67,93,229,.12);
+  border-radius: 50%; box-shadow: 0 0 0 36px rgba(67,93,229,.035),0 0 0 78px rgba(67,93,229,.025);
+  content: ""; pointer-events: none;
+}
+.home-page .welcome-copy { min-width: 0; }
+.home-page .eyebrow,.home-page .section-kicker { display: inline-flex; align-items: center; gap: 9px; color: var(--blue); font-size: .73rem; font-weight: 800; letter-spacing: .13em; }
+.home-page .eyebrow { margin-bottom: 22px; }
+.home-page .eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 5px rgba(67,93,229,.11); }
+.home-page .welcome-copy h1 { max-width: 650px; margin-bottom: 20px; font-size: clamp(2.6rem,5vw,4.3rem); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+.home-page .welcome-copy h1 span { color: var(--blue); }
+.home-page .welcome-description { max-width: 480px; margin-bottom: 27px; color: var(--muted); font-size: 1.05rem; line-height: 1.85; }
+.home-page .welcome-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.home-page .button-primary { display: inline-flex; min-height: 54px; align-items: center; justify-content: center; gap: 11px; padding: 0 21px; border: 1px solid var(--blue); border-radius: 13px; background: var(--blue); box-shadow: 0 8px 22px rgba(67,93,229,.2); color: #fff; font-weight: 700; text-decoration: none; transition: background .2s,transform .2s,box-shadow .2s; }
+.home-page .button-primary:hover { transform: translateY(-2px); background: var(--blue-dark); box-shadow: 0 12px 28px rgba(67,93,229,.24); }
+
+.home-page .progress-card { min-width: 0; padding: 25px; border: 1px solid rgba(255,255,255,.9); border-radius: 23px; background: rgba(255,255,255,.82); box-shadow: 0 14px 42px rgba(37,51,102,.065); backdrop-filter: blur(12px); }
+.home-page .progress-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.home-page .progress-label { color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.home-page .inline-route-note { display: block; margin-top: 8px; color: var(--blue); font-size: .82rem; font-weight: 600; }
+
+.home-page .status-panel { width: min(100%,850px); margin: 56px auto 0; padding: clamp(25px,4vw,42px); border: 1px solid var(--border); border-radius: 25px; background: #fff; box-shadow: 0 12px 42px rgba(37,51,102,.04); scroll-margin-top: 24px; }
+.home-page .status-heading { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+.home-page .status-icon { display: grid; flex: none; width: 48px; height: 48px; place-items: center; border-radius: 15px; background: var(--tint); color: var(--blue); }
+.home-page .status-heading .section-kicker { margin-bottom: 7px; }
+.home-page .status-heading h2 { margin-bottom: 7px; font-size: clamp(1.5rem,3vw,2rem); font-weight: 800; }
+.home-page .status-heading p { color: var(--muted); font-size: .93rem; line-height: 1.7; }
+
+.home-page .help { display: flex; align-items: center; gap: 22px; margin-top: 38px; padding: clamp(24px,4vw,38px); border-radius: 23px; background: linear-gradient(115deg,#202e52,#344477); color: #fff; box-shadow: 0 16px 38px rgba(32,46,82,.13); }
+.home-page .help-symbol { display: grid; flex: none; width: 50px; height: 50px; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 15px; background: rgba(255,255,255,.09); }
+.home-page .help-copy { flex: 1; min-width: 0; }
+.home-page .help-copy .section-kicker { margin-bottom: 8px; color: #b9c5ff; }
+.home-page .help-copy h2 { margin-bottom: 8px; font-size: clamp(1.25rem,2.5vw,1.65rem); font-weight: 800; }
+.home-page .help-copy p { max-width: 580px; color: #d4dcf1; font-size: .9rem; line-height: 1.8; }
+.home-page .help-button { display: inline-flex; flex: none; min-height: 48px; align-items: center; justify-content: center; gap: 9px; padding: 0 17px; border: 1px solid rgba(255,255,255,.55); border-radius: 11px; background: #fff; color: #202f58; font-weight: 700; font-size: .88rem; text-decoration: none; transition: transform .2s,background .2s; }
+.home-page .help-button:hover { transform: translateY(-2px); background: #edf0ff; }
+
+.home-page .home-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 24px max(32px,calc((100vw - 1160px)/2)); border-top: 1px solid var(--border); background: #fff; }
+.home-page .footer-brand { display: inline-flex; align-items: center; gap: 10px; font: 800 .98rem "Manrope",sans-serif; }
+.home-page .footer-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px; background: var(--blue); color: #fff; }
+.home-page .home-footer p { color: var(--muted); font-size: .86rem; }
+
+.admin-home { margin-top: 28px; }
+.admin-home-header { margin-bottom: 20px; }
+.admin-home-header h2 { margin: 8px 0; }
+.admin-home-header p { margin: 0; }
+.admin-home-add-slot,
+.admin-home-section { margin-top: 24px; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.admin-tabs button[aria-selected="true"] { font-weight: 700; }
+.admin-home-list-panel { min-width: 0; }
+.admin-home-list-panel .dash-list { margin-top: 0; }
+.admin-home-list-panel .dash-list li { gap: 16px; flex-wrap: wrap; }
+.admin-home-list-panel .dash-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.admin-home-list-panel .dash-list li > span:last-child { flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .home-content { width: min(calc(100% - 40px),720px); }
+  .home-page .welcome { grid-template-columns: 1fr; }
+  .home-page .help { align-items: flex-start; flex-wrap: wrap; }
+  .home-page .help-copy { flex-basis: calc(100% - 72px); }
+  .home-page .help-button { margin-left: 72px; }
+}
+@media (max-width: 640px) {
+  .admin-home-list-panel .dash-list li { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 600px) {
+  .home-content { width: calc(100% - 28px); padding: 18px 0 42px; }
+  .home-page .welcome { gap: 27px; padding: 27px 21px; border-radius: 23px; }
+  .home-page .welcome-copy h1 { font-size: clamp(2.4rem,11vw,3.25rem); }
+  .home-page .progress-card { padding: 19px; }
+  .home-page .status-panel { margin-top: 30px; padding: 23px 19px; }
+  .home-page .help { gap: 15px; margin-top: 30px; padding: 24px 20px; }
+  .home-page .help-symbol { width: 42px; height: 42px; }
+  .home-page .help-copy { flex-basis: calc(100% - 57px); }
+  .home-page .help-button { width: 100%; margin-left: 0; }
+  .home-page .home-footer { align-items: flex-start; flex-direction: column; padding: 22px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-page *, .home-page *::before, .home-page *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
