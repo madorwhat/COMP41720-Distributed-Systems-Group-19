@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -10,9 +11,95 @@ const routes = require('./routes');
 const events = require('./events');
 
 const app = express();
+
+// Metrics storage
+let totalRequests = 0;
+let successfulRequests = 0;
+let clientErrors = 0;
+let serverErrors = 0;
+let totalRequestDuration = 0;
+
+const requestDurations = [];
+
 app.use(helmet());
 app.use(cors({ origin: config.corsOrigins }));
 app.use(express.json({ limit: '10kb' }));
+
+// Metrics middleware
+app.use((req, res, next) => {
+  if (req.path === '/metrics') {
+    return next();
+  }
+
+  const startTime = process.hrtime.bigint();
+
+  res.on('finish', () => {
+    const duration =
+      Number(process.hrtime.bigint() - startTime) / 1e9;
+
+    totalRequests++;
+    totalRequestDuration += duration;
+
+    if (res.statusCode >= 200 && res.statusCode < 400) {
+      successfulRequests++;
+    } else if (res.statusCode >= 400 && res.statusCode < 500) {
+      clientErrors++;
+    } else if (res.statusCode >= 500) {
+      serverErrors++;
+    }
+
+    requestDurations.push(duration);
+
+    if (requestDurations.length > 1000) {
+      requestDurations.shift();
+    }
+  });
+
+  next();
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', (req, res) => {
+  const averageDuration =
+    totalRequests > 0
+      ? totalRequestDuration / totalRequests
+      : 0;
+
+  res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+
+  res.send(
+    [
+      '# HELP booking_http_requests_total Total HTTP requests',
+      '# TYPE booking_http_requests_total counter',
+      `booking_http_requests_total ${totalRequests}`,
+
+      '# HELP booking_http_requests_success_total Successful HTTP requests',
+      '# TYPE booking_http_requests_success_total counter',
+      `booking_http_requests_success_total ${successfulRequests}`,
+
+      '# HELP booking_http_requests_client_errors_total Client error responses',
+      '# TYPE booking_http_requests_client_errors_total counter',
+      `booking_http_requests_client_errors_total ${clientErrors}`,
+
+      '# HELP booking_http_requests_server_errors_total Server error responses',
+      '# TYPE booking_http_requests_server_errors_total counter',
+      `booking_http_requests_server_errors_total ${serverErrors}`,
+
+      '# HELP booking_http_request_duration_seconds_total Total HTTP request duration',
+      '# TYPE booking_http_request_duration_seconds_total counter',
+      `booking_http_request_duration_seconds_total ${totalRequestDuration}`,
+
+      '# HELP booking_http_request_duration_seconds_average Average HTTP request duration',
+      '# TYPE booking_http_request_duration_seconds_average gauge',
+      `booking_http_request_duration_seconds_average ${averageDuration}`,
+
+      '# HELP booking_process_uptime_seconds Process uptime in seconds',
+      '# TYPE booking_process_uptime_seconds gauge',
+      `booking_process_uptime_seconds ${process.uptime()}`,
+    ].join('\n') + '\n'
+  );
+});
+
 app.use(routes);
 
 app.use((req, res) => {
