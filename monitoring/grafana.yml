@@ -1,0 +1,16 @@
+# Grafana setup, loaded on start (mounted twice in docker-compose.yml: once for each section).
+apiVersion: 1
+
+# Where Grafana reads the metrics from
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+
+# Load monitoring/dashboard.json
+providers:
+  - name: Book My Visa
+    options:
+      path: /etc/grafana/dashboards

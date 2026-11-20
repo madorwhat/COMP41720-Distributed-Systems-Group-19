@@ -1,0 +1,174 @@
+# Starts the whole Book My Visa app: `docker compose up --build` (from the repo root).
+# Before the first start: cp backend/.env.example backend/.env, and fill in the Gmail login (see README.md).
+#
+# Settings shared by the backend services come from backend/.env. The `environment:` lines below
+# only hold the Docker-specific addresses (databases, RabbitMQ, Auth's key), which win over that file.
+#
+#   Frontend      http://localhost:3000
+#   Auth          http://localhost:4000
+#   Booking       http://localhost:4001
+#   Notification  http://localhost:4003
+#   RabbitMQ UI   http://localhost:15672  (guest / guest)
+#   Prometheus    http://localhost:9090
+#   Grafana       http://localhost:3001   (admin / admin)
+services:
+  # ---------- Auth ----------
+  auth-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+      POSTGRES_DB: auth_db
+    ports:
+      - '${AUTH_DB_HOST_PORT:-5432}:5432' # already running Postgres on 5432? set AUTH_DB_HOST_PORT
+    volumes:
+      - auth_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U auth -d auth_db']
+      interval: 5s
+      retries: 10
+
+  auth-service:
+    build: ./backend/auth-service
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgres://auth:auth@auth-postgres:5432/auth_db
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./backend/auth-service/keys:/app/keys # token keys live here; Booking and Notification read public.pem
+    healthcheck:
+      # healthy once it answers /health, which is also after it has created the token keys
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      retries: 20
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+
+  # ---------- Booking ----------
+  booking-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking
+      POSTGRES_DB: booking_db
+    ports:
+      - '${BOOKING_DB_HOST_PORT:-5434}:5432'
+    volumes:
+      - booking_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U booking -d booking_db']
+      interval: 5s
+      retries: 10
+
+  booking-service:
+    build: ./backend/booking-service
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgres://booking:booking@booking-postgres:5432/booking_db
+      JWT_PUBLIC_KEY_PATH: /app/auth-keys/public.pem
+      PORT: 4001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - '4001:4001'
+    volumes:
+      - ./backend/auth-service/keys:/app/auth-keys:ro
+    depends_on:
+      booking-postgres:
+        condition: service_healthy
+      auth-service: # Booking refuses to start without Auth's public key
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ---------- Notification ----------
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: notification
+      POSTGRES_PASSWORD: notification
+      POSTGRES_DB: notification_db
+    ports:
+      - '${NOTIFICATION_DB_HOST_PORT:-5435}:5432'
+    volumes:
+      - notification_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U notification -d notification_db']
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 5s
+      retries: 20
+
+  notification-service:
+    build: ./backend/notification-service
+    env_file: ./backend/.env # includes the Gmail login; the service stops at startup without it
+    environment:
+      DATABASE_URL: postgres://notification:notification@notification-postgres:5432/notification_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_PUBLIC_KEY_PATH: /app/auth-keys/public.pem
+      PORT: 4003
+    ports:
+      - '4003:4003'
+    volumes:
+      - ./backend/auth-service/keys:/app/auth-keys:ro
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+
+  # ---------- Frontend ----------
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    # The browser calls the services on localhost:4000/4001/4003 (the ports published above).
+    depends_on:
+      - auth-service
+      - booking-service
+      - notification-service
+
+  # ---------- Monitoring ----------
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3001:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana.yml:/etc/grafana/provisioning/datasources/grafana.yml:ro
+      - ./monitoring/grafana.yml:/etc/grafana/provisioning/dashboards/grafana.yml:ro
+      - ./monitoring/dashboard.json:/etc/grafana/dashboards/dashboard.json:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  auth_pgdata:
+  booking_pgdata:
+  notification_pgdata:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:

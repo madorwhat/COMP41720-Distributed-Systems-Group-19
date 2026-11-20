@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 try {
-  process.loadEnvFile(path.join(__dirname, '..', '.env'));
+  process.loadEnvFile(path.join(__dirname, '..', '..', '.env')); // backend/.env, shared by all services
 } catch {
   // The service can also be configured entirely through its environment.
 }

@@ -1,5 +1,5 @@
 // All the settings for this service live here. Values come from environment variables or from
-// the .env file (if both set the same thing, the environment variable wins).
+// backend/.env (if both set the same thing, the environment variable wins).
 // The app and the database scripts (sequelize-cli, via .sequelizerc) both read this file,
 // so they always use the same database.
 const crypto = require('crypto');
@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 try {
-  process.loadEnvFile(path.join(__dirname, '..', '.env'));
+  process.loadEnvFile(path.join(__dirname, '..', '..', '.env')); // backend/.env, shared by all services
 } catch {
   // No .env file? That's fine, the defaults below are used.
 }
