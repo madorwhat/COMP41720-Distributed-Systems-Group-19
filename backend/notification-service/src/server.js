@@ -15,6 +15,27 @@ const subscriptions = require('./routes/subscriptions');
 
 const app = express();
 
+// Track HTTP requests and response times for Prometheus.
+// /metrics is excluded so Prometheus scrapes do not inflate the request count.
+app.use((req, res, next) => {
+  if (req.path === '/metrics') return next();
+
+  const endTimer = metrics.httpRequestDuration.startTimer({
+    method: req.method,
+  });
+
+  res.on('finish', () => {
+    metrics.httpRequests.inc({
+      method: req.method,
+      status_code: String(res.statusCode),
+    });
+
+    endTimer();
+  });
+
+  next();
+});
+
 // Up only if we can reach both the database and RabbitMQ.
 app.get('/health', async (req, res) => {
   const database = await sequelize.authenticate().then(
