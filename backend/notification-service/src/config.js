@@ -1,10 +1,10 @@
-// All the settings for this service. Values come from environment variables or from the .env
-// file; every setting has a default that works with this folder's docker-compose.yml.
+// All the settings for this service. Values come from environment variables or from
+// backend/.env; every setting except the Gmail login has a default.
 const fs = require('fs');
 const path = require('path');
 
 try {
-  process.loadEnvFile(path.join(__dirname, '..', '.env'));
+  process.loadEnvFile(path.join(__dirname, '..', '..', '.env')); // backend/.env, shared by all services
 } catch {
   // No .env file? That's fine, the defaults below are used.
 }

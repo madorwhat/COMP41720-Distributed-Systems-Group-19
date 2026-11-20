@@ -23,7 +23,7 @@ function requireMailLogin(settings = config) {
   if (!settings.smtpUser || !settings.smtpPass) {
     throw new Error(
       'SMTP_USER and SMTP_PASS are not set. Notification sends all email through Gmail: put the ' +
-        'Gmail address and a Gmail App Password in the .env file (see the README).',
+        'Gmail address and a Gmail App Password in backend/.env (see the README).',
     );
   }
 }

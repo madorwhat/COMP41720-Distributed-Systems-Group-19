@@ -9,7 +9,7 @@ Booking now publishes both messages, from [`backend/booking-service/src/events.j
 | Booking endpoint | Message | Email |
 |---|---|---|
 | `POST /api/v1/bookings` | `BookingConfirmed` | the confirmation to that user, then the reminder the day before |
-| `POST /api/v1/tpv/slots` (admin) | `SlotsOpened`, one per slot, so `slotTimes` has one entry | "new appointments are open" to the people who **subscribed** to that country and visa type in Notification (see its [README](README.md#subscriptions-who-gets-new-appointments-open-emails)) |
+| `POST /api/v1/tpv/slots` (admin) | `SlotsOpened`, one per slot, so `slotTimes` has one entry | "new appointments are open" to the people who **subscribed** to that country and visa type in Notification (see the [README](../../README.md)) |
 
 Booking posts **after** its own database commit and doesn't wait for the email: if RabbitMQ is down the booking or slot is still saved and the user still gets their answer, but that one message is not sent (Booking logs it). The outbox below would make delivery guaranteed; it is not built yet. Because each slot is its own message, adding several slots in a row emails each person only once (the one-per-day limit below); set `SLOT_ALERT_COOLDOWN_HOURS=0` to email for every slot.
 
@@ -23,7 +23,7 @@ Booking posts **after** its own database commit and doesn't wait for the email: 
 
 Notification creates the exchange too, so it doesn't matter which service starts first. Use a confirm channel and wait for the confirm before you mark the message as sent.
 
-**Connecting to RabbitMQ.** RabbitMQ is started by this folder's `docker-compose.yml`. Until we have one shared compose file, the Booking container can't reach it by the name `rabbitmq` (each compose file has its own network), so set `RABBITMQ_URL=amqp://guest:guest@host.docker.internal:5672` in Booking. When running Booking outside Docker, use `amqp://guest:guest@localhost:5672`.
+**Connecting to RabbitMQ.** RabbitMQ is started by the root `docker-compose.yml`, where Booking reaches it as `amqp://guest:guest@rabbitmq:5672`. When running Booking outside Docker, use `amqp://guest:guest@localhost:5672`.
 
 ## The message
 
@@ -95,10 +95,10 @@ When an admin adds new slots, Booking posts one `SlotsOpened` message, and Notif
 
 Send one message per country, visa type and day (the same shape as the admin's "add slots" form). No list of recipients is needed: **Notification decides who gets the email.** It tells the people who subscribed to that country and visa type through its own `/subscriptions` routes, and nobody else. Notification has no list of all users (Auth owns that), so "who wants to know" is what each person chose.
 
-To keep from flooding anyone, a person gets at most one such email per country and visa type per day (`SLOT_ALERT_COOLDOWN_HOURS`, see the [README](README.md)). Several messages in one day are fine; later ones simply send nothing to people who were already told.
+To keep from flooding anyone, a person gets at most one such email per country and visa type per day (`SLOT_ALERT_COOLDOWN_HOURS`, see the [README](../../README.md)). Several messages in one day are fine; later ones simply send nothing to people who were already told.
 
 A message that doesn't match this exactly goes to the dead letter queue `notification.dlq` and gets no email. The full check is `slotsOpened` in [`src/consumer/messages.js`](src/consumer/messages.js). The advice above about confirm channels and sending safely applies here too, and a message sent twice is harmless.
 
 ## Trying it without Booking
 
-`npm run publish-test-event` in this folder publishes messages exactly like the ones above (see the [README](README.md)). Add `--slots-opened` for the second message.
+`npm run publish-test-event` in this folder publishes messages exactly like the ones above (see the [README](../../README.md)). Add `--slots-opened` for the second message.
