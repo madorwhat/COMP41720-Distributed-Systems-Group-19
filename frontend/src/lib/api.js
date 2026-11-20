@@ -2,6 +2,7 @@ const env = import.meta.env || {};
 export const AUTH_URL = env.VITE_AUTH_URL || "http://localhost:4000";
 export const BOOKING_URL = env.VITE_BOOKING_URL || "http://localhost:4001";
 export const NOTIFICATION_URL = env.VITE_NOTIFICATION_URL || "http://localhost:4003";
+export const AI_URL = env.VITE_AI_URL || "http://localhost:4004";
 
 const TOKEN_KEY = "accessToken";
 const USER_KEY = "currentUser";
@@ -34,6 +35,7 @@ function friendly(code, message) {
     case "RATE_LIMITED": return "Too many attempts. Please wait a few minutes and try again.";
     case "EMAIL_TAKEN": return "That email is already registered. Try logging in instead.";
     case "DUPLICATE_SLOT": return "That slot has already been added.";
+    case "PLAN_NOT_FOUND": return "This plan has expired. Please suggest a new one.";
     case "FORBIDDEN": return message === "Admins only" ? "Only admins can do that." : message;
     case "VALIDATION_ERROR": {
       const [field, ...rest] = message.split(": ");

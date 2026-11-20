@@ -8,6 +8,7 @@
 #   Auth          http://localhost:4000
 #   Booking       http://localhost:4001
 #   Notification  http://localhost:4003
+#   AI planner    http://localhost:4004
 #   RabbitMQ UI   http://localhost:15672  (guest / guest)
 #   Prometheus    http://localhost:9090
 #   Grafana       http://localhost:3001   (admin / admin)
@@ -130,12 +131,51 @@ services:
       auth-service:
         condition: service_healthy
 
+  # ---------- AI planner ----------
+  ollama: # runs the local model
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama # the downloaded model is kept here, so it is fetched only once
+    healthcheck:
+      test: ['CMD', 'ollama', 'list']
+      interval: 5s
+      retries: 20
+
+  ollama-pull: # downloads the model on the first start (about 2 GB), then exits
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: ollama:11434
+    entrypoint: ['ollama', 'pull', 'qwen2.5:3b']
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ai-service:
+    build: ./backend/ai-service
+    env_file: ./backend/.env
+    environment:
+      JWT_PUBLIC_KEY_PATH: /app/auth-keys/public.pem
+      BOOKING_URL: http://booking-service:4001
+      NOTIFICATION_URL: http://notification-service:4003
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:3b
+    ports:
+      - '4004:4004'
+    volumes:
+      - ./backend/auth-service/keys:/app/auth-keys:ro
+    # Not waiting for the model download: until it is there, plans use the rule-based fallback.
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
   # ---------- Frontend ----------
   frontend:
     build: ./frontend
     ports:
       - '3000:3000'
-    # The browser calls the services on localhost:4000/4001/4003 (the ports published above).
+    # The browser calls the services on localhost:4000/4001/4003/4004 (the ports published above).
     depends_on:
       - auth-service
       - booking-service
@@ -172,3 +212,4 @@ volumes:
   rabbitmq_data:
   prometheus_data:
   grafana_data:
+  ollama_data:

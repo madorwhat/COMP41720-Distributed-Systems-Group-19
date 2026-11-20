@@ -16,6 +16,13 @@ async function alertOne(event, recipient, cooldownStart) {
   });
 
   return sequelize.transaction(async (transaction) => {
+    // Several SlotsOpened messages are handled at the same time (an approved plan sends one per
+    // slot). This lock makes them take turns per person and choice, so the "told recently" check
+    // below sees the email the other one just sent, and nobody gets the same alert twice.
+    await sequelize.query('SELECT pg_advisory_xact_lock(hashtext(:key))', {
+      replacements: { key: `${userEmail}|${country}|${visaType}` },
+      transaction,
+    });
     const alert = await SlotAlert.findOne({
       where: { eventId, userEmail },
       lock: transaction.LOCK.UPDATE,
