@@ -7,11 +7,12 @@
 //   GET    /subscriptions                        my choices
 //   PUT    /subscriptions/:country/:visaType     subscribe (repeating it is harmless)
 //   DELETE /subscriptions/:country/:visaType     unsubscribe (also harmless to repeat)
+//   GET    /subscriptions/stats                  admins: how many people wait for each choice
 const express = require('express');
 const { QueryTypes } = require('sequelize');
 const { z, ZodError } = require('zod');
 const { sequelize, SlotSubscription } = require('../db');
-const { authenticate } = require('./auth');
+const { authenticate, requireAdmin } = require('./auth');
 const { country, visaType } = require('../choices');
 
 const choice = z.object({ country, visaType });
@@ -29,6 +30,16 @@ router.get('/', async (req, res) => {
       ['visaType', 'ASC'],
     ],
   });
+  res.json({ data });
+});
+
+// For the AI planner: how many people are waiting for each country and visa type. Counts only.
+router.get('/stats', requireAdmin, async (req, res) => {
+  const data = await sequelize.query(
+    `SELECT country, visa_type AS "visaType", COUNT(*)::int AS subscribers
+       FROM slot_subscriptions GROUP BY country, visa_type`,
+    { type: QueryTypes.SELECT },
+  );
   res.json({ data });
 });
 

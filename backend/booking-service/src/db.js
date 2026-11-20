@@ -15,6 +15,7 @@ const BookingSlot = sequelize.define(
     slotTime: { type: DataTypes.STRING(50), allowNull: false },
     day: { type: DataTypes.DATEONLY, allowNull: false },
     isBooked: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    planId: { type: DataTypes.UUID }, // set when the slot came from an approved AI plan
   },
   {
     tableName: 'booking_slots',

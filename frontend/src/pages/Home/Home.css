@@ -105,3 +105,15 @@
   .home-page *, .home-page *::before, .home-page *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
+
+/* AI release planner (admin panel) */
+.ai-badge { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: #edf2ff; color: #315ce8; font-size: 12px; font-weight: 750; vertical-align: middle; }
+.ai-plan-table { overflow-x: auto; margin: 14px 0; }
+.ai-plan-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ai-plan-table th { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 650; text-align: left; white-space: nowrap; }
+.ai-plan-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ai-plan-table input { width: 64px; padding: 6px 8px; border: 1px solid #dce2ec; border-radius: 8px; font: inherit; }
+.ai-plan-actions { display: flex; gap: 10px; align-items: stretch; }
+.ai-plan-actions .booking-submit { width: auto; flex: 1; }
+.ai-plan-actions .slot-btn { padding: 0 20px; text-align: center; }
+.ai-planner .dash-muted { margin: 12px 0 0; }

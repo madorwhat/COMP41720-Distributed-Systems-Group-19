@@ -38,6 +38,12 @@ const greeting = (n) => `Hello ${n.userName || 'there'},`;
 // The Message-ID is built from `id` (the appointment id, for the first two emails), so if an
 // email ever goes out twice the two copies are easy to recognise as the same email.
 async function send(kind, to, id, subject, text) {
+  // The demo users from the seed data have made-up addresses ending in ".test" (a domain that
+  // can never exist). We don't send to them, so the demo never mails 100 fake people.
+  if (to.endsWith('.test')) {
+    console.log(`Not emailing demo address ${to} (${kind})`);
+    return;
+  }
   try {
     await transport.sendMail({
       from: config.mailFrom,

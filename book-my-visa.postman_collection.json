@@ -3,7 +3,7 @@
     "_postman_id": "bcbb93b6-a288-4ee7-9765-59d1b3d41fa2",
     "name": "Book My Visa",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "All Book My Visa API routes, grouped by service. Run the whole collection top to bottom (Runner) for the full flow, or send single requests.\n\n## Before running\n1. Start everything from the repo root: `docker compose up --build` (see README.md). Notification needs the Gmail login in `backend/.env`.\n2. Set the collection variable `testEmail` to an inbox you own. The flow sends REAL email to it (a \"new slots open\" alert and a booking confirmation).\n\n## Flow\n1. **Auth Service** (:4000): create and log in a test user, update the profile, then log in as the seeded admin and try the admin routes.\n2. **Notification Service** (:4003): the test user subscribes to Schengen / Student slot alerts.\n3. **Booking Service** (:4001): the admin creates a slot (Notification emails the subscriber), the test user books it (Notification emails a confirmation).\n4. **Cleanup**: unsubscribe and log out.\n\nTokens and ids are saved into collection variables automatically (`userToken`, `adminToken`, `targetUserId`, `bookingId`).\n\nNotes: signup accepts 409 when the test user already exists. Slot alerts are limited to one per person per country and visa type every 24 h (`SLOT_ALERT_COOLDOWN_HOURS`), so a rerun may not send a second alert. Logout only revokes the token at Auth; Booking and Notification check tokens locally until they expire."
+    "description": "All Book My Visa API routes, grouped by service. Run the whole collection top to bottom (Runner) for the full flow, or send single requests.\n\n## Before running\n1. Start everything from the repo root: `docker compose up --build` (see README.md). Notification needs the Gmail login in `backend/.env`.\n2. Set the collection variable `testEmail` to an inbox you own. The flow sends REAL email to it (a \"new slots open\" alert and a booking confirmation).\n\n## Flow\n1. **Auth Service** (:4000): create and log in a test user, update the profile, then log in as the seeded admin and try the admin routes.\n2. **Notification Service** (:4003): the test user subscribes to Schengen / Student slot alerts.\n3. **Booking Service** (:4001): the admin creates a slot (Notification emails the subscriber), the test user books it (Notification emails a confirmation).\n4. **Cleanup**: unsubscribe and log out.\n5. **AI Service** (:4004): the admin asks the AI planner for a slot-release plan (nothing is created).\n\nTokens and ids are saved into collection variables automatically (`userToken`, `adminToken`, `targetUserId`, `bookingId`).\n\nNotes: signup accepts 409 when the test user already exists. Slot alerts are limited to one per person per country and visa type every 24 h (`SLOT_ALERT_COOLDOWN_HOURS`), so a rerun may not send a second alert. Logout only revokes the token at Auth; Booking and Notification check tokens locally until they expire."
   },
   "item": [
     {
@@ -1000,6 +1000,70 @@
           ]
         }
       ]
+    },
+    {
+      "name": "5. AI Service",
+      "description": "Admin-only AI slot-release planner. Base URL: {{aiBaseUrl}}. Approving a plan creates real slots (and emails subscribers), so do that from the admin panel instead.",
+      "item": [
+        {
+          "name": "Health (model status)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{aiBaseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('AI service is up', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('ok'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: suggest release plan",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{aiBaseUrl}}/plans"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('A checked plan comes back', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const plan = pm.response.json();",
+                  "  pm.expect(plan.source).to.be.oneOf(['ai', 'rules']);",
+                  "  pm.expect(plan.items).to.be.an('array');",
+                  "  plan.items.forEach((item) => pm.expect(item.slots).to.be.within(1, 40));",
+                  "  pm.collectionVariables.set('planId', plan.planId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1058,6 +1122,14 @@
     },
     {
       "key": "slotTime",
+      "value": ""
+    },
+    {
+      "key": "aiBaseUrl",
+      "value": "http://localhost:4004"
+    },
+    {
+      "key": "planId",
       "value": ""
     }
   ]

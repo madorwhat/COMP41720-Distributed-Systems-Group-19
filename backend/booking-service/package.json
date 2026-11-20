@@ -8,11 +8,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "node scripts/check-auth-key.js && npm run db:migrate && node --watch src/server.js",
+    "dev": "node scripts/check-auth-key.js && npm run db:migrate && npm run db:seed && node --watch src/server.js",
     "prestart": "node scripts/check-auth-key.js",
-    "start": "npm run db:migrate && node src/server.js",
+    "start": "npm run db:migrate && npm run db:seed && node src/server.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:seed": "sequelize-cli db:seed:all",
     "lint": "eslint ."
   },
   "dependencies": {

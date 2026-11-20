@@ -1,5 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
+const { QueryTypes } = require('sequelize');
 const { sequelize, BookingSlot, Appointment } = require('./db');
 const { authenticate, requireAdmin, httpError } = require('./auth');
 const events = require('./events');
@@ -46,6 +47,63 @@ router.post('/api/v1/tpv/slots', authenticate, requireAdmin, async (req, res) =>
   const slot = await BookingSlot.create(createSlotBody.parse(req.body));
   events.slotsOpened(slot); // tell Notification; we don't wait for it
   res.status(201).json({ slot });
+});
+
+// --- For the AI planner (backend/ai-service) ---
+
+// Supply per country and visa type, from today on: how many slots, how many booked, how many
+// free, and the last day that already has slots (new slots go after it).
+router.get('/api/v1/tpv/stats', authenticate, requireAdmin, async (req, res) => {
+  const data = await sequelize.query(
+    `SELECT country, visa_type AS "visaType",
+            COUNT(*)::int AS "upcomingSlots",
+            COUNT(*) FILTER (WHERE is_booked)::int AS "bookedSlots",
+            COUNT(*) FILTER (WHERE NOT is_booked)::int AS "freeSlots",
+            MAX(day) AS "lastSlotDay"
+       FROM booking_slots
+      WHERE day >= CURRENT_DATE
+      GROUP BY country, visa_type`,
+    { type: QueryTypes.SELECT },
+  );
+  res.json({ data });
+});
+
+// Creates the slots of an approved plan in one go. Approving the same plan again creates nothing
+// (the slots remember the planId), and a slot that already exists is skipped, not an error.
+const batchBody = z.object({
+  planId: z.uuid(),
+  slots: z.array(createSlotBody).min(1).max(200),
+});
+
+router.post('/api/v1/tpv/slots/batch', authenticate, requireAdmin, async (req, res) => {
+  const { planId, slots } = batchBody.parse(req.body);
+  if (await BookingSlot.findOne({ where: { planId } })) {
+    return res.json({ planId, created: 0, skipped: slots.length, alreadyApproved: true });
+  }
+
+  const created = await sequelize.query(
+    `INSERT INTO booking_slots (country, visa_type, day, slot_time, plan_id)
+     SELECT country, visa_type, day, slot_time, CAST(:planId AS uuid)
+       FROM UNNEST(ARRAY[:countries]::varchar[], ARRAY[:visaTypes]::varchar[],
+                   ARRAY[:days]::date[], ARRAY[:times]::varchar[])
+         AS s(country, visa_type, day, slot_time)
+     ON CONFLICT DO NOTHING -- a slot that already exists is skipped
+     RETURNING booking_id AS "bookingId", country, visa_type AS "visaType", day,
+               slot_time AS "slotTime", created_at AS "createdAt"`,
+    {
+      replacements: {
+        planId,
+        countries: slots.map((s) => s.country),
+        visaTypes: slots.map((s) => s.visaType),
+        days: slots.map((s) => s.day),
+        times: slots.map((s) => s.slotTime),
+      },
+      type: QueryTypes.SELECT,
+    },
+  );
+  // Tell Notification about each new slot, as for a single slot; we don't wait for it.
+  for (const slot of created) events.slotsOpened({ ...slot, createdAt: new Date(slot.createdAt) });
+  res.status(201).json({ planId, created: created.length, skipped: slots.length - created.length });
 });
 
 router.get('/api/v1/tpv/slots', async (req, res) => {

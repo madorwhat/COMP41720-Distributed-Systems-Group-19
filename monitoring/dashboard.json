@@ -89,6 +89,10 @@
         {
           "expr": "up{job=\"notification-service\"}",
           "legendFormat": "Notification"
+        },
+        {
+          "expr": "up{job=\"ai-service\"}",
+          "legendFormat": "AI Planner"
         }
       ]
     },
@@ -530,6 +534,145 @@
         {
           "expr": "sum by (stream, result) (notification_messages_consumed_total)",
           "legendFormat": "{{stream}}: {{result}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "AI Planner",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Planner \u2013 Model Response Time (p95)",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "lineInterpolation": "smooth",
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(ai_model_request_duration_seconds_bucket[15m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Planner \u2013 Tokens Used",
+      "gridPos": {
+        "x": 8,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "lineInterpolation": "smooth",
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (ai_model_tokens_total)",
+          "legendFormat": "{{type}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Planner \u2013 Plans, Fallbacks & Checks",
+      "gridPos": {
+        "x": 16,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "lineInterpolation": "smooth",
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (source) (ai_plans_total)",
+          "legendFormat": "plans: {{source}}"
+        },
+        {
+          "expr": "sum by (reason) (ai_fallbacks_total)",
+          "legendFormat": "fallback: {{reason}}"
+        },
+        {
+          "expr": "ai_number_check_failures_total",
+          "legendFormat": "invented numbers caught"
+        },
+        {
+          "expr": "ai_missed_by_model_total",
+          "legendFormat": "shortages the AI missed"
+        },
+        {
+          "expr": "ai_plans_approved_total",
+          "legendFormat": "approved"
         }
       ]
     }

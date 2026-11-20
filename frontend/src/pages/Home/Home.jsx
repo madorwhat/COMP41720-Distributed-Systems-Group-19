@@ -1,5 +1,5 @@
 import { useAuth } from "../../auth/Auth.jsx";
-import { api, AUTH_URL, BOOKING_URL } from "../../lib/api.js";
+import { api, AUTH_URL, BOOKING_URL, AI_URL } from "../../lib/api.js";
 import Icon from "../../components/Icons.jsx";
 import "./Home.css";
 import "../Booking/Booking.css";
@@ -475,6 +475,133 @@ async function add(event) {
   );
 }
 
+// Why the AI wasn't used, in words an admin understands.
+const FALLBACK_TEXT = {
+  timeout: "the AI took too long",
+  model_error: "the AI is not available",
+  invalid_answer: "the AI gave an unusable answer",
+  breaker_open: "the AI is paused after repeated failures",
+};
+
+// How many slots a country/visa type can use at most: the people waiting minus the free slots
+// (and never more than 40 in one plan).
+function slotsNeeded(snapshot, item) {
+  const r = snapshot.find((s) => s.country === item.country && s.visaType === item.visaType);
+  return r ? Math.min(40, Math.max(0, r.subscribers - r.freeSlots)) : 0;
+}
+
+// AI release planner: suggests where to add slots, the admin checks and approves.
+// Nothing is created until "Approve" is clicked.
+function AdminPlanner() {
+  const [plan, setPlan] = useState(null);
+  const [counts, setCounts] = useState({});
+  const [msg, setMsg] = useState({});
+  const [busy, setBusy] = useState("");
+
+  async function suggest() {
+    setMsg({});
+    setBusy("plan");
+    try {
+      const p = await api(AI_URL, "/plans", { method: "POST" });
+      setPlan(p);
+      setCounts(Object.fromEntries(p.items.map((i) => [`${i.country}|${i.visaType}`, Math.min(i.slots, slotsNeeded(p.snapshot, i))])));
+    } catch (error) {
+      setMsg({ err: error.message });
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function approve() {
+    setMsg({});
+    setBusy("approve");
+    try {
+      const items = plan.items.map((i) => ({ country: i.country, visaType: i.visaType, slots: Number(counts[`${i.country}|${i.visaType}`]) || 0 }));
+      const r = await api(AI_URL, `/plans/${plan.planId}/approve`, { method: "POST", body: { items } });
+      setPlan(null);
+      setMsg({ ok: r.alreadyApproved ? "This plan was already approved." : `Created ${r.created} slots${r.skipped ? ` (${r.skipped} already existed)` : ""}. Subscribers are being told.` });
+    } catch (error) {
+      setMsg({ err: error.message });
+    } finally {
+      setBusy("");
+    }
+  }
+
+  const row = (i) => plan.snapshot.find((s) => s.country === i.country && s.visaType === i.visaType);
+  const asOf = plan && new Date(plan.dataAsOf).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <section className="profile-card admin-home-add-slot ai-planner">
+      <div className="profile-card-heading">
+        <div>
+          <h2>AI release planner <span className="ai-badge">AI</span></h2>
+          <p>Suggests where to add slots, based on how many people are waiting and how many slots are free. Nothing is created until you approve.</p>
+        </div>
+      </div>
+
+      {!plan && (
+        <button className="booking-submit" type="button" onClick={suggest} disabled={busy === "plan"}>
+          {busy === "plan" ? "Thinking…" : "Suggest release plan"}
+        </button>
+      )}
+
+      {plan && (
+        <>
+          <p className="dash-muted">
+            {plan.source === "ai"
+              ? `Suggested by ${plan.model} (prompt ${plan.promptVersion}) in ${(plan.tookMs / 1000).toFixed(1)} s · data as of ${asOf}`
+              : `Rule-based plan, because ${FALLBACK_TEXT[plan.fallbackReason] || "the AI is not available"} · data as of ${asOf}`}
+          </p>
+
+          {plan.items.length === 0 ? (
+            <p className="dash-ok">Nothing to add: free slots cover everyone who is waiting.</p>
+          ) : (
+            <div className="ai-plan-table">
+              <table>
+                <thead>
+                  <tr><th>Country · visa</th><th>Waiting</th><th>Free</th><th>Add</th><th>When</th><th>Why</th></tr>
+                </thead>
+                <tbody>
+                  {plan.items.map((i) => {
+                    const key = `${i.country}|${i.visaType}`;
+                    return (
+                      <tr key={key}>
+                        <td><strong>{i.country} · {i.visaType}</strong></td>
+                        <td>{row(i)?.subscribers}</td>
+                        <td>{row(i)?.freeSlots}</td>
+                        <td>
+                          <input type="number" min="0" max={slotsNeeded(plan.snapshot, i)} aria-label={`Slots to add for ${i.country} ${i.visaType}`}
+                            value={counts[key]}
+                            onChange={(e) => setCounts({ ...counts, [key]: e.target.value === "" ? "" : Math.min(Math.max(0, Math.floor(Number(e.target.value)) || 0), slotsNeeded(plan.snapshot, i)) })} />
+                        </td>
+                        <td>{i.firstDay === i.lastDay ? i.firstDay : `${i.firstDay} → ${i.lastDay}`}</td>
+                        <td>
+                          {i.reason}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="ai-plan-actions">
+            {plan.items.length > 0 && (
+              <button className="booking-submit" type="button" onClick={approve} disabled={busy === "approve"}>
+                {busy === "approve" ? "Creating slots…" : "Approve & create slots"}
+              </button>
+            )}
+            <button className="slot-btn" type="button" onClick={() => setPlan(null)} disabled={Boolean(busy)}>Discard</button>
+          </div>
+        </>
+      )}
+
+      <Msg msg={msg} />
+    </section>
+  );
+}
+
 function Pager({ page, total, onPage }) {
   const pages = Math.max(1, Math.ceil(total / LIMIT));
 
@@ -772,6 +899,8 @@ function InlineAdminHome({ user }) {
         </div>
       </header>
 
+      <AdminPlanner />
+      
       <AdminSlots />
 
       <section

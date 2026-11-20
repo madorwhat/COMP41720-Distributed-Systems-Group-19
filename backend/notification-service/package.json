@@ -8,10 +8,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "npm run db:migrate && node --watch src/server.js",
-    "start": "npm run db:migrate && node src/server.js",
+    "dev": "npm run db:migrate && npm run db:seed && node --watch src/server.js",
+    "start": "npm run db:migrate && npm run db:seed && node src/server.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:seed": "sequelize-cli db:seed:all",
     "publish-test-event": "node scripts/publish-test-event.js",
     "send-test-mail": "node scripts/send-test-mail.js",
     "test": "node --test",

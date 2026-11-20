@@ -9,7 +9,7 @@ const unauthenticated = () =>
   httpError(401, 'UNAUTHENTICATED', 'Missing, invalid or expired token');
 
 // Lets the request through only with a valid token, and puts the caller on req.user as
-// { id, email, name }.
+// { id, email, name, role }.
 function authenticate(req, res, next) {
   const match = /^Bearer\s+(.+)$/i.exec(req.get('authorization') || '');
   if (!match) throw unauthenticated();
@@ -37,8 +37,13 @@ function authenticate(req, res, next) {
   }
   if (typeof claims.sub !== 'string' || typeof claims.email !== 'string') throw unauthenticated();
 
-  req.user = { id: claims.sub, email: claims.email, name: claims.name };
+  req.user = { id: claims.sub, email: claims.email, name: claims.name, role: claims.role };
   next();
 }
 
-module.exports = { authenticate, httpError };
+function requireAdmin(req, res, next) {
+  if (req.user.role !== 'admin') throw httpError(403, 'FORBIDDEN', 'Admins only');
+  next();
+}
+
+module.exports = { authenticate, requireAdmin, httpError };
